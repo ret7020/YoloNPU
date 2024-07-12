@@ -2,25 +2,29 @@ from rknnlite.api import RKNNLite
 import cv2 
 import numpy as np
 import time
+import logging
+
+logger = logging.getLogger()
+logger.disabled = True
 
 
 # Config
-OBJ_THRESH = 0.35
-NMS_THRESH = 0.35
-
+OBJ_THRESH = 0.25 # Adjust for your tasks (taken from yolov8 default cfg)
+NMS_THRESH = 0.45 # Adjust for your tasks (taken from yolov8 default cfg)
 IMG_SIZE = (640, 640)
+MODEL_PATH = "yolo_quant_int8.rknn"
+
+# COCO dataset; change for yours (if custom dataset used)
 CLASSES = ("person", "bicycle", "car","motorbike ","aeroplane ","bus ","train","truck ","boat","traffic light",
-           "fire hydrant","stop sign ","parking meter","bench","bird","cat","dog ","horse ","sheep","cow","elephant",
-           "bear","zebra ","giraffe","backpack","umbrella","handbag","tie","suitcase","frisbee","skis","snowboard","sports ball","kite",
-           "baseball bat","baseball glove","skateboard","surfboard","tennis racket","bottle","wine glass","cup","fork","knife ",
-           "spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hot dog","pizza ","donut","cake","chair","sofa",
-           "pottedplant","bed","diningtable","toilet ","tvmonitor","laptop	","mouse	","remote ","keyboard ","cell phone","microwave ",
-           "oven ","toaster","sink","refrigerator ","book","clock","vase","scissors ","teddy bear ","hair drier", "toothbrush ")
+            "fire hydrant","stop sign ","parking meter","bench","bird","cat","dog ","horse ","sheep","cow","elephant",
+            "bear","zebra ","giraffe","backpack","umbrella","handbag","tie","suitcase","frisbee","skis","snowboard","sports ball","kite",
+            "baseball bat","baseball glove","skateboard","surfboard","tennis racket","bottle","wine glass","cup","fork","knife ",
+            "spoon","bowl","banana","apple","sandwich","orange","broccoli","carrot","hot dog","pizza ","donut","cake","chair","sofa",
+            "pottedplant","bed","diningtable","toilet ","tvmonitor","laptop	","mouse	","remote ","keyboard ","cell phone","microwave ",
+            "oven ","toaster","sink","refrigerator ","book","clock","vase","scissors ","teddy bear ","hair drier", "toothbrush ")
 
 
-
-
-
+# Post processing functions taken from https://github.com/airockchip/rknn_model_zoo
 def filter_boxes(boxes, box_confidences, box_class_probs):
     """Filter boxes with object threshold.
     """
@@ -104,8 +108,8 @@ def box_process(position):
 
 def post_process(input_data):
     boxes, scores, classes_conf = [], [], []
-    defualt_branch=3
-    pair_per_branch = len(input_data)//defualt_branch
+    defualt_branch = 3
+    pair_per_branch = len(input_data) // defualt_branch
     # Python 忽略 score_sum 输出
     for i in range(defualt_branch):
         boxes.append(box_process(input_data[pair_per_branch*i]))
@@ -152,22 +156,18 @@ def post_process(input_data):
     return boxes, classes, scores
 
 rknn = RKNNLite()
-rknn.load_rknn('yolo_quant_int8.rknn')
+rknn.load_rknn(MODEL_PATH)
 rknn.init_runtime()
 
 img = cv2.imread('bus.jpg')
 img = cv2.resize(img, (640, 640))
-print(img.shape)
-img = np.expand_dims(img, 0)
-print(img.shape)
+img = np.expand_dims(img, 0) # RKNN expects 4dim image
 fps = []
 
 for i in range(20):
     start_time = time.time()
     outputs = rknn.inference(inputs=[img])
     finish_time = time.time()
-
-    print(outputs)
     boxes, classes, scores = post_process(outputs)
     print(boxes, list(map(lambda x: CLASSES[x], classes)), scores)
     fps.append(1 / (finish_time - start_time))
