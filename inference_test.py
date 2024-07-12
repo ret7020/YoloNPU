@@ -12,7 +12,7 @@ logger.disabled = True
 OBJ_THRESH = 0.25 # Adjust for your tasks (taken from yolov8 default cfg)
 NMS_THRESH = 0.45 # Adjust for your tasks (taken from yolov8 default cfg)
 IMG_SIZE = (640, 640)
-MODEL_PATH = "yolo_quant_int8.rknn"
+MODEL_PATH = "./assets/models/yolo_quant_int8.rknn"
 
 # COCO dataset; change for yours (if custom dataset used)
 CLASSES = ("person", "bicycle", "car","motorbike ","aeroplane ","bus ","train","truck ","boat","traffic light",
@@ -159,7 +159,7 @@ rknn = RKNNLite()
 rknn.load_rknn(MODEL_PATH)
 rknn.init_runtime()
 
-img = cv2.imread('bus.jpg')
+img = cv2.imread('./assets/images/bus.jpg')
 img = cv2.resize(img, (640, 640))
 img = np.expand_dims(img, 0) # RKNN expects 4dim image
 fps = []
